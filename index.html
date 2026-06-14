@@ -1,0 +1,63 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>贪吃蛇</title><style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{background:#06080d;display:flex;justify-content:center;align-items:flex-start;min-height:100vh;font-family:'Segoe UI',system-ui,sans-serif;overflow-x:hidden;user-select:none;padding:24px 10px 10px}
+body::before{content:'';position:fixed;inset:0;pointer-events:none}
+.game-wrapper{display:flex;flex-direction:column;align-items:center;gap:12px;flex-shrink:0}
+.header{display:flex;justify-content:space-between;align-items:center;width:100%;padding:0 4px}
+.score-panel{display:flex;gap:28px}.score-item{color:#465064;font-size:11px;letter-spacing:.6px;text-transform:uppercase}
+.score-item span{color:#d4dae3;font-size:28px;font-weight:700;display:block;line-height:1.1;font-variant-numeric:tabular-nums}
+.best-score span{color:#fbbf24}.score-item.scored span{color:var(--accent,#4ade80)}
+.pause-btn{background:transparent;border:1px solid #1c2335;border-radius:6px;color:#465064;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;line-height:1;transition:all .15s;flex-shrink:0}
+.pause-btn:hover{color:#d4dae3;border-color:#2d3548}.pause-btn.active{color:#fbbf24;border-color:#fbbf2450}.pause-btn.hidden{display:none}
+canvas{border:2px solid #151b28;border-radius:6px;background:#0b0e16;transition:border-color .3s,box-shadow .15s;max-width:100%}
+.controls-hint{color:#1f2836;font-size:11px;letter-spacing:.5px;text-align:center}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;z-index:10}.overlay.hidden{display:none}
+.overlay-card{background:rgba(15,18,27,.95);border:1px solid #1c2335;border-radius:10px;padding:28px 36px;text-align:center;backdrop-filter:blur(16px);box-shadow:0 8px 32px rgba(0,0,0,.45);max-width:360px;width:90%}
+.overlay-card h2{color:#d4dae3;font-size:18px;font-weight:600;margin-bottom:10px;letter-spacing:.3px}
+.overlay-card .final-score{color:#fbbf24;font-size:46px;font-weight:700;margin-bottom:2px;font-variant-numeric:tabular-nums}
+.overlay-card .final-score-label{color:#465064;font-size:11px;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:4px}
+.overlay-card .final-diff,.overlay-card .final-len{color:#3d4a5c;font-size:12px;margin-bottom:4px}
+.overlay-card .new-best{color:var(--accent,#4ade80);font-size:13px;font-weight:500;margin-bottom:18px}
+.overlay-card button{background:#22c55e;color:#06080d;border:none;border-radius:6px;padding:10px 28px;font-size:14px;font-weight:600;cursor:pointer;transition:all .15s;letter-spacing:.3px}
+.overlay-card button:hover{background:#16a34a;transform:scale(1.03)}.overlay-card button:active{transform:scale(.97)}
+.overlay-card button.secondary{background:transparent;color:#525a6b;border:1px solid #1c2335}.overlay-card button.secondary:hover{color:#d4dae3;border-color:#2d3548}
+.start-menu .title{color:var(--accent,#4ade80);font-size:42px;font-weight:800;letter-spacing:2px;margin-bottom:4px}
+.start-menu .subtitle{color:#465064;font-size:13px;margin-bottom:16px;letter-spacing:.8px}
+.start-menu .menu-buttons{display:flex;flex-direction:column;gap:8px;align-items:center;margin-bottom:10px}.start-menu .menu-buttons button{min-width:150px}
+.menu-section-label{color:#2d3548;font-size:10px;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+.menu-selected{color:#525a6b;font-size:11px;margin-bottom:6px}.menu-selected span{color:var(--accent,#4ade80);font-weight:600}
+.diff-row,.theme-row{display:flex;gap:8px;justify-content:center;margin-bottom:12px}
+.diff-btn{background:transparent;border:1px solid #1c2335;border-radius:5px;color:#465064;padding:6px 14px;font-size:12px;cursor:pointer;transition:all .15s;letter-spacing:.3px}
+.diff-btn:hover{color:#d4dae3;border-color:#2d3548}
+.diff-btn.active{color:var(--accent,#4ade80);border-color:var(--accent-50,#22c55e50);background:rgba(34,197,94,.06)}
+.theme-dot{width:22px;height:22px;border-radius:50%;border:2px solid #1c2335;cursor:pointer;transition:all .15s}
+.theme-dot:hover{border-color:#2d3548;transform:scale(1.15)}
+.theme-dot.active{border-color:var(--accent,#4ade80);box-shadow:0 0 8px var(--accent-30,transparent)}
+.sound-toggle{position:fixed;bottom:20px;right:20px;z-index:20;background:rgba(15,18,27,.8);border:1px solid #1c2335;border-radius:6px;color:#465064;padding:6px 10px;font-size:11px;cursor:pointer;letter-spacing:.4px;transition:all .15s}
+.sound-toggle:hover{color:#d4dae3;border-color:#2d3548}.sound-toggle.muted{color:#2d2336}
+.snake-icon{width:40px;height:40px;margin:0 auto 10px;position:relative}.snake-icon div{position:absolute;border-radius:50%}
+.snake-icon .s1{width:12px;height:12px;background:var(--accent,#22c55e);top:3px;left:18px}.snake-icon .s2{width:10px;height:10px;background:var(--accent2,#15803d);top:9px;left:10px}
+.snake-icon .s3{width:8px;height:8px;background:var(--accent3,#166534);top:16px;left:4px}.snake-icon .eye{width:3px;height:3px;background:#06080d;border-radius:50%;position:absolute;top:5px;left:23px}
+.lb-panel{position:fixed;right:12px;top:50%;transform:translateY(-50%);z-index:5;background:rgba(20,26,40,.94);border:1px solid #293349;border-radius:10px;padding:20px 18px;width:min(30vw,240px);min-width:170px;max-height:70vh;overflow-y:auto;display:flex;flex-direction:column;gap:14px;box-shadow:0 4px 24px rgba(0,0,0,.3)}
+.lb-high-score{text-align:center}
+.lb-high-score .lb-hs-label{color:#586680;font-size:10px;text-transform:uppercase;letter-spacing:1px}
+.lb-high-score .lb-hs-value{color:#fbbf24;font-size:32px;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums}
+.lb-title-row{border-top:1px solid #222940;padding-top:14px;text-align:center}
+.lb-title-row .lb-title{color:#586680;font-size:9px;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px}
+.lb-panel table{width:100%;border-collapse:collapse}
+.lb-panel td{padding:4px 6px;font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.lb-rank{color:#586680;width:20px;text-align:center;font-size:11px;font-weight:600}
+.lb-rank.gold{color:#fbbf24}.lb-rank.silver{color:#d4dae3}.lb-rank.bronze{color:#d98a4a}
+.lb-score-val{color:#e8ecf2;font-weight:600;text-align:right;padding-right:8px}
+.lb-diff-val{color:#7a8ba0;font-size:10px;text-align:right;padding-right:4px}
+.lb-empty{color:#586680;font-size:11px;text-align:center;padding:6px 0}
+@media(max-width:640px){.lb-panel{width:min(35vw,180px);min-width:130px;right:4px;padding:14px 10px}}
+</style></head><body>
+<div class="game-wrapper"><div class="header"><div class="score-panel"><div class="score-item" id="scorePanel">得分<span id="score">0</span></div><div class="score-item best-score">最高<span id="best">0</span></div></div><button class="pause-btn hidden" id="pauseBtn" title="暂停 (Space/Esc/P)">&#9646;&#9646;</button></div><canvas id="canvas"></canvas><div class="controls-hint">方向键/WASD | 按住0.25s全蛇高亮加速 | Space/P/Esc暂停 | 触屏滑动</div></div>
+<div class="lb-panel" id="lbPanel"><div class="lb-high-score"><div class="lb-hs-label">最高记录</div><div class="lb-hs-value" id="lbBest">0</div></div><div class="lb-title-row"><div class="lb-title">排行榜</div><div id="leaderboard"></div></div></div>
+<button class="sound-toggle" id="soundToggle" title="切换音效">sound</button>
+<div class="overlay" id="startMenu"><div class="overlay-card start-menu"><div class="snake-icon"><div class="s1"></div><div class="s2"></div><div class="s3"></div><div class="eye"></div></div><div class="title">贪吃蛇</div><div class="subtitle">SNAKE</div><div class="menu-section-label">难度</div><div class="menu-selected">当前: <span id="diffLabel">普通</span></div><div class="diff-row" id="diffRow"><button class="diff-btn" data-diff="easy">简单</button><button class="diff-btn active" data-diff="normal">普通</button><button class="diff-btn" data-diff="hard">困难</button></div><div class="menu-section-label">配色</div><div class="menu-selected">当前: <span id="themeLabel">翠绿</span></div><div class="theme-row" id="themeRow"><button class="theme-dot active" data-theme="green" style="background:#22c55e" title="翠绿"></button><button class="theme-dot" data-theme="blue" style="background:#3b82f6" title="海蓝"></button><button class="theme-dot" data-theme="purple" style="background:#a855f7" title="紫霞"></button><button class="theme-dot" data-theme="gold" style="background:#f59e0b" title="金芒"></button></div><div class="menu-buttons"><button id="startBtn">开始游戏</button></div></div></div>
+<div class="overlay hidden" id="gameOver"><div class="overlay-card"><h2>游戏结束</h2><div class="final-score" id="finalScore">0</div><div class="final-score-label">最终得分</div><div class="final-diff" id="finalDiff"></div><div class="final-len" id="finalLen"></div><div class="new-best hidden" id="newBest">新纪录</div><button id="restartBtn">再来一局</button><button class="secondary" id="menuBtn" style="margin-top:8px">返回菜单</button></div></div>
+<div class="overlay hidden" id="pauseOverlay"><div class="overlay-card"><h2>已暂停</h2><button id="resumeBtn">继续</button><button class="secondary" id="quitBtn" style="margin-top:8px">返回菜单</button></div></div>
+<script src="sound.js" defer></script><script src="game.js" defer></script>
+</body></html>
